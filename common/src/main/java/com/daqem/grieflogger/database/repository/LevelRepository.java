@@ -2,6 +2,7 @@ package com.daqem.grieflogger.database.repository;
 
 import com.daqem.grieflogger.GriefLogger;
 import com.daqem.grieflogger.database.Database;
+import com.daqem.grieflogger.database.dialect.MySQLDialect;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -21,7 +22,7 @@ public class LevelRepository extends Repository {
                 	name text NOT NULL UNIQUE
                 );
                 """;
-        if (isMysql()) {
+        if (database.getDialect() instanceof MySQLDialect) {
             sql = """
                     CREATE TABLE IF NOT EXISTS levels (
                     	id int PRIMARY KEY AUTO_INCREMENT,
@@ -34,24 +35,13 @@ public class LevelRepository extends Repository {
     }
 
     public void insert(String name) {
-        String query = """
-                INSERT OR IGNORE INTO levels(name)
-                VALUES(?);
-                """;
+        String query = database.getDialect().getInsertIgnore() + " INTO levels(name) VALUES(?);";
 
-        if (isMysql()) {
-            query = """
-                    INSERT IGNORE INTO levels(name)
-                    VALUES(?);
-                    """;
-        }
-
-        try {
-            PreparedStatement preparedStatement = database.prepareStatement(query);
-            preparedStatement.setString(1, name);
-            database.queue.add(preparedStatement);
-        } catch (SQLException exception) {
-            GriefLogger.LOGGER.error("Failed to insert level into database", exception);
-        }
+        database.queue.add(connection -> {
+            try (PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+                preparedStatement.setString(1, name);
+                preparedStatement.executeUpdate();
+            }
+        });
     }
 }

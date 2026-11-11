@@ -32,9 +32,7 @@ public class ItemService {
     }
 
     public void insert(UUID userUuid, Level level, BlockPos pos, SimpleItemStack item, ItemAction itemAction) {
-        ResourceLocation itemLocation = item.getItem().arch$registryName();
-        if (itemLocation != null) {
-            itemRepository.insert(System.currentTimeMillis(),
+        itemRepository.insert(System.currentTimeMillis(),
                     userUuid.toString(),
                     level,
                     pos.getX(),
@@ -42,7 +40,7 @@ public class ItemService {
                     pos.getZ(),
                     item,
                     itemAction.getId());
-        }
+
     }
 
     public void insertMap(UUID userUuid, Level level, BlockPos pos, Map<ItemAction, List<SimpleItemStack>> itemsMap) {

@@ -1,10 +1,9 @@
 package com.daqem.grieflogger.database.queue;
 
-import java.sql.PreparedStatement;
-
 public interface IQueue {
 
-    void add(PreparedStatement statement);
+    void add(SqlTask sqlTask);
     void execute();
     void hello();
+    boolean isEmpty();
 }

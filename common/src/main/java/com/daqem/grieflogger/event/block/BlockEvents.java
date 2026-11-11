@@ -8,6 +8,7 @@ public class BlockEvents {
 
     public static void registerEvents() {
         BlockEvent.BREAK.register(BreakBlockEvent::breakBlock);
+        BlockEvent.PLACE.register(PlaceBlockEvent::placeBlock);
         BlockEvent.PLACE.register(((level, blockPos, blockState, entity) -> {
             PlaceBlockEvent.placeBlock(level, blockPos, blockState, entity);
             return EventResult.pass();

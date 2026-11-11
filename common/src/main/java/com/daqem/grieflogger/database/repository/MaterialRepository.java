@@ -2,6 +2,7 @@ package com.daqem.grieflogger.database.repository;
 
 import com.daqem.grieflogger.GriefLogger;
 import com.daqem.grieflogger.database.Database;
+import com.daqem.grieflogger.database.dialect.MySQLDialect;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -21,7 +22,7 @@ public class MaterialRepository extends Repository {
                 	name text NOT NULL UNIQUE
                 );
                 """;
-        if (isMysql()) {
+        if (database.getDialect() instanceof MySQLDialect) {
             sql = """
                     CREATE TABLE IF NOT EXISTS materials (
                     	id int PRIMARY KEY AUTO_INCREMENT,
@@ -34,24 +35,13 @@ public class MaterialRepository extends Repository {
     }
 
     public void insert(String material) {
-        String query = """
-                INSERT OR IGNORE INTO materials(name)
-                VALUES(?);
-                """;
+        String query = database.getDialect().getInsertIgnore() + " INTO materials(name) VALUES(?);";
 
-        if (isMysql()) {
-            query = """
-                    INSERT IGNORE INTO materials(name)
-                    VALUES(?);
-                    """;
-        }
-
-        try {
-            PreparedStatement preparedStatement = database.prepareStatement(query);
-            preparedStatement.setString(1, material);
-            database.queue.add(preparedStatement);
-        } catch (SQLException exception) {
-            GriefLogger.LOGGER.error("Failed to insert material into database", exception);
-        }
+        database.queue.add(connection -> {
+            try (PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+                preparedStatement.setString(1, material);
+                preparedStatement.executeUpdate();
+            }
+        });
     }
 }

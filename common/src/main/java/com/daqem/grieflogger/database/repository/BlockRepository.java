@@ -3,6 +3,7 @@ package com.daqem.grieflogger.database.repository;
 import com.daqem.grieflogger.GriefLogger;
 import com.daqem.grieflogger.command.filter.FilterList;
 import com.daqem.grieflogger.database.Database;
+import com.daqem.grieflogger.database.dialect.MySQLDialect;
 import com.daqem.grieflogger.model.history.BlockHistory;
 import com.daqem.grieflogger.model.history.IHistory;
 import org.jetbrains.annotations.Nullable;
@@ -38,7 +39,7 @@ public class BlockRepository extends Repository {
                 	FOREIGN KEY(type) REFERENCES materials(id)
                 );
                 """;
-        if (isMysql()) {
+        if (database.getDialect() instanceof MySQLDialect) {
             sql = """
                     CREATE TABLE IF NOT EXISTS blocks (
                     	time bigint NOT NULL,
@@ -63,7 +64,7 @@ public class BlockRepository extends Repository {
         String sql = """
                 CREATE INDEX IF NOT EXISTS coordinates ON blocks (x, y, z);
                 """;
-        if (isMysql()) {
+        if (database.getDialect() instanceof MySQLDialect) {
             sql = """
                     ALTER TABLE blocks ADD INDEX coordinates (x, y, z);
                     """;
@@ -72,118 +73,68 @@ public class BlockRepository extends Repository {
     }
 
     public void insertMaterial(long time, String userUuid, String levelName, int x, int y, int z, String material, int blockAction) {
-        String materialQuery = """
-                INSERT OR IGNORE INTO materials(name)
-                VALUES(?);
-                """;
+        String materialQuery = database.getDialect().getInsertIgnore() + " INTO materials(name) VALUES(?);";
 
-        if (isMysql()) {
-            materialQuery = """
-                    INSERT IGNORE INTO materials(name)
-                    VALUES(?);
-                    """;
-        }
+        String blockQuery = database.getDialect().getInsertIgnore() + " INTO blocks(time, user, level, x, y, z, type, action) " +
+                "VALUES(?, (" +
+                "SELECT id FROM users WHERE uuid = ?" +
+                "), (" +
+                "SELECT id FROM levels WHERE name = ?" +
+                "), ?, ?, ?, (" +
+                "SELECT id FROM materials WHERE name = ?" +
+                "), ?);";
 
-        String blockQuery = """
-                INSERT OR IGNORE INTO blocks(time, user, level, x, y, z, type, action)
-                VALUES(?, (
-                    SELECT id FROM users WHERE uuid = ?
-                ), (
-                    SELECT id FROM levels WHERE name = ?
-                ), ?, ?, ?, (
-                    SELECT id FROM materials WHERE name = ?
-                ), ?);
-                """;
+        database.queue.add(connection ->{
+            try (PreparedStatement materialStatement = connection.prepareStatement(materialQuery)) {
+                materialStatement.setString(1, material);
+                materialStatement.executeUpdate();
+            }
 
-        if (isMysql()) {
-            blockQuery = """
-                    INSERT IGNORE INTO blocks(time, user, level, x, y, z, type, action)
-                    VALUES(?, (
-                        SELECT id FROM users WHERE uuid = ?
-                    ), (
-                        SELECT id FROM levels WHERE name = ?
-                    ), ?, ?, ?, (
-                        SELECT id FROM materials WHERE name = ?
-                    ), ?);
-                    """;
-        }
+            try (PreparedStatement blockStatement = connection.prepareStatement(blockQuery)) {
+                blockStatement.setString(1, material);
+                blockStatement.setLong(1, time);
+                blockStatement.setString(2, userUuid);
+                blockStatement.setString(3, levelName);
+                blockStatement.setInt(4, x);
+                blockStatement.setInt(5, y);
+                blockStatement.setInt(6, z);
+                blockStatement.setString(7, material);
+                blockStatement.setInt(8, blockAction);
+                blockStatement.executeUpdate();
+            }
 
-        try {
-            PreparedStatement materialStatement = database.prepareStatement(materialQuery);
-            materialStatement.setString(1, material);
-            database.queue.add(materialStatement);
-
-            PreparedStatement blockStatement = database.prepareStatement(blockQuery);
-            blockStatement.setLong(1, time);
-            blockStatement.setString(2, userUuid);
-            blockStatement.setString(3, levelName);
-            blockStatement.setInt(4, x);
-            blockStatement.setInt(5, y);
-            blockStatement.setInt(6, z);
-            blockStatement.setString(7, material);
-            blockStatement.setInt(8, blockAction);
-            database.queue.add(blockStatement);
-        } catch (SQLException exception) {
-            GriefLogger.LOGGER.error("Failed to insert block into database", exception);
-        }
+        });
     }
 
     public void insertEntity(long time, String userUuid, String levelName, int x, int y, int z, String entity, int blockAction) {
-        String materialQuery = """
-                INSERT OR IGNORE INTO entities(name)
-                VALUES(?);
-                """;
+        String materialQuery = database.getDialect().getInsertIgnore() + " INTO entities(name) VALUES(?);";
 
-        if (isMysql()) {
-            materialQuery = """
-                    INSERT IGNORE INTO entities(name)
-                    VALUES(?);
-                    """;
-        }
+        String blockQuery = database.getDialect().getInsertIgnore() + " INTO blocks(time, user, level, x, y, z, type, action) " +
+                "VALUES(?, (" +
+                "SELECT id FROM users WHERE uuid = ?" +
+                "), (" +
+                "SELECT id FROM levels WHERE name = ?" +
+                "), ?, ?, ?, (" +
+                "SELECT id FROM entities WHERE name = ?" +
+                "), ?);";
 
-        String blockQuery = """
-                INSERT OR IGNORE INTO blocks(time, user, level, x, y, z, type, action)
-                VALUES(?, (
-                    SELECT id FROM users WHERE uuid = ?
-                ), (
-                    SELECT id FROM levels WHERE name = ?
-                ), ?, ?, ?, (
-                    SELECT id FROM entities WHERE name = ?
-                ), ?);
-                """;
-
-        if (isMysql()) {
-            blockQuery = """
-                    INSERT IGNORE INTO blocks(time, user, level, x, y, z, type, action)
-                    VALUES(?, (
-                        SELECT id FROM users WHERE uuid = ?
-                    ), (
-                        SELECT id FROM levels WHERE name = ?
-                    ), ?, ?, ?, (
-                        SELECT id FROM entities WHERE name = ?
-                    ), ?);
-                    """;
-        }
-
-
-        try {
-            PreparedStatement materialStatement = database.prepareStatement(materialQuery);
-            PreparedStatement blockStatement = database.prepareStatement(blockQuery);
-            materialStatement.setString(1, entity);
-            database.queue.add(materialStatement);
-
-            blockStatement.setLong(1, time);
-            blockStatement.setString(2, userUuid);
-            blockStatement.setString(3, levelName);
-            blockStatement.setInt(4, x);
-            blockStatement.setInt(5, y);
-            blockStatement.setInt(6, z);
-            blockStatement.setString(7, entity);
-            blockStatement.setInt(8, blockAction);
-            database.queue.add(blockStatement);
-        } catch (SQLException exception) {
-            GriefLogger.LOGGER.error("Failed to insert block into database", exception);
-        }
+        database.queue.add(connection -> {
+            try (PreparedStatement materialStatement = connection.prepareStatement(materialQuery)) {
+                materialStatement.setString(1, entity);
+                materialStatement.executeUpdate();
+            }
+            try (PreparedStatement blockStatement = connection.prepareStatement(blockQuery)) {
+                blockStatement.setLong(1, time);
+                blockStatement.setString(2, userUuid);
+                blockStatement.setString(3, levelName);
+                blockStatement.setInt(4, x);
+                blockStatement.setInt(5, y);
+                blockStatement.setInt(6, z);
+                blockStatement.setString(7, entity);
+                blockStatement.setInt(8, blockAction);
+                blockStatement.executeUpdate();
+            }
+        });
     }
 
     public List<IHistory> getBlockHistory(String levelName, int x, int y, int z) {
@@ -270,16 +221,15 @@ public class BlockRepository extends Repository {
                 ) AND x = ? AND y = ? AND z = ? AND action = 2
                 """;
 
-        try {
-            PreparedStatement preparedStatement = database.prepareStatement(query);
-            preparedStatement.setString(1, levelName);
-            preparedStatement.setInt(2, x);
-            preparedStatement.setInt(3, y);
-            preparedStatement.setInt(4, z);
-            database.queue.add(preparedStatement);
-        } catch (SQLException e) {
-            GriefLogger.LOGGER.error("Failed to remove interactions for position", e);
-        }
+        database.queue.add(connection -> {
+            try (PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+                preparedStatement.setString(1, levelName);
+                preparedStatement.setInt(2, x);
+                preparedStatement.setInt(3, y);
+                preparedStatement.setInt(4, z);
+                preparedStatement.executeUpdate();
+            }
+        });
     }
 
     public List<IHistory> getFilteredBlockHistory(String levelName, FilterList filterList) {

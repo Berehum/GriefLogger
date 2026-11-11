@@ -4,5 +4,4 @@ public interface IRepository {
 
     void createTable();
 
-    boolean isMysql();
 }

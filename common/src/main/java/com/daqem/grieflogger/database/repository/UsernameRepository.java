@@ -2,6 +2,7 @@ package com.daqem.grieflogger.database.repository;
 
 import com.daqem.grieflogger.GriefLogger;
 import com.daqem.grieflogger.database.Database;
+import com.daqem.grieflogger.database.dialect.MySQLDialect;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -24,7 +25,7 @@ public class UsernameRepository extends Repository {
                 	UNIQUE(uuid, name)
                 );
                 """;
-        if (isMysql()) {
+        if (database.getDialect() instanceof MySQLDialect) {
             sql = """
                     CREATE TABLE IF NOT EXISTS usernames (
                     	id int PRIMARY KEY AUTO_INCREMENT,
@@ -40,26 +41,15 @@ public class UsernameRepository extends Repository {
     }
 
     public void insert(long time, String uuid, String name) {
-        String query = """
-                INSERT OR IGNORE INTO usernames(time, uuid, name)
-                VALUES(?, ?, ?);
-                """;
+        String query = database.getDialect().getInsertIgnore() + " INTO usernames(time, uuid, name) VALUES(?, ?, ?);";
 
-        if (isMysql()) {
-            query = """
-                    INSERT IGNORE INTO usernames(time, uuid, name)
-                    VALUES(?, ?, ?);
-                    """;
-        }
-
-        try {
-            PreparedStatement preparedStatement = database.prepareStatement(query);
-            preparedStatement.setLong(1, time);
-            preparedStatement.setString(2, uuid);
-            preparedStatement.setString(3, name);
-            database.queue.add(preparedStatement);
-        } catch (SQLException exception) {
-            GriefLogger.LOGGER.error("Failed to insert username into database", exception);
-        }
+        database.queue.add(connection -> {
+            try (PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+                preparedStatement.setLong(1, time);
+                preparedStatement.setString(2, uuid);
+                preparedStatement.setString(3, name);
+                preparedStatement.executeUpdate();
+            }
+        });
     }
 }

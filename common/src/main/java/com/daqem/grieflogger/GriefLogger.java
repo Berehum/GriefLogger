@@ -6,6 +6,7 @@ import com.daqem.grieflogger.database.service.*;
 import com.daqem.grieflogger.event.*;
 import com.daqem.grieflogger.event.block.BlockEvents;
 import com.daqem.grieflogger.event.item.ItemEvents;
+import com.daqem.grieflogger.thread.ThreadManager;
 import com.mojang.logging.LogUtils;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
@@ -13,6 +14,8 @@ import net.minecraft.network.chat.Style;
 import net.minecraft.network.chat.contents.TranslatableContents;
 import net.minecraft.resources.ResourceLocation;
 import org.slf4j.Logger;
+
+import java.util.concurrent.TimeUnit;
 
 public class GriefLogger {
     public static final String MOD_ID = "grieflogger";
@@ -26,6 +29,7 @@ public class GriefLogger {
             return;
         }
         registerEvents();
+        startHeartbeat();
     }
 
     private static void initConfigs() {
@@ -33,6 +37,8 @@ public class GriefLogger {
     }
 
     private static void registerEvents() {
+        ServerStoppedEvent.registerEvent();
+
         BlockEvents.registerEvents();
         TickEvents.registerEvents();
         EntityEvents.registerEvents();
@@ -45,6 +51,7 @@ public class GriefLogger {
 
         ChatEvent.registerEvent();
         CommandEvent.registerEvent();
+
     }
 
     private static boolean prepareDatabase() {
@@ -90,6 +97,21 @@ public class GriefLogger {
 
     public static Database getDatabase() {
         return DATABASE;
+    }
+
+    private static void startHeartbeat() {
+        int frequencyTicks = GriefLoggerConfig.helloFrequency.get();
+        long seconds = frequencyTicks / 20;
+        if (seconds < 1) seconds = 1;
+
+        ThreadManager.scheduleAtFixedRate(() -> {
+            Database database = getDatabase();
+            if (database != null) {
+                database.queue.hello();
+                database.queue.execute();
+                database.batchQueue.execute();
+            }
+        }, seconds, seconds, TimeUnit.SECONDS);
     }
 
     public static MutableComponent translate(String str) {

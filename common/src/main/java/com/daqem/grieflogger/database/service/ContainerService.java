@@ -4,6 +4,7 @@ import com.daqem.grieflogger.command.filter.FilterList;
 import com.daqem.grieflogger.database.Database;
 import com.daqem.grieflogger.database.repository.ContainerRepository;
 import com.daqem.grieflogger.model.SimpleItemStack;
+import com.daqem.grieflogger.model.action.IAction;
 import com.daqem.grieflogger.model.action.ItemAction;
 import com.daqem.grieflogger.model.history.IHistory;
 import net.minecraft.core.BlockPos;
@@ -31,9 +32,7 @@ public class ContainerService {
     }
 
     public void insert(UUID userUuid, Level level, BlockPos pos, SimpleItemStack item, ItemAction itemAction) {
-        ResourceLocation itemLocation = item.getItem().arch$registryName();
-        if (itemLocation != null) {
-            containerRepository.insert(System.currentTimeMillis(),
+        containerRepository.insert(System.currentTimeMillis(),
                     userUuid.toString(),
                     level,
                     pos.getX(),
@@ -41,7 +40,7 @@ public class ContainerService {
                     pos.getZ(),
                     item,
                     itemAction.getId());
-        }
+
     }
 
     public void insertList(UUID userUuid, Level level, BlockPos pos, List<SimpleItemStack> items, ItemAction itemAction) {
@@ -91,5 +90,9 @@ public class ContainerService {
                 level,
                 filterList
         );
+    }
+
+    private static boolean isValidItemAction(IAction action) {
+        return action.equals(ItemAction.ADD_ITEM) || action.equals(ItemAction.REMOVE_ITEM);
     }
 }
