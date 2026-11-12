@@ -28,8 +28,6 @@ public class EntityUtils {
         UUID uuid = getCombinedUUID(logicalActor, original);
         String name = getCombinedName(logicalActor, original);
 
-        System.out.println("name = " + name);
-
         Services.USER.insertOrUpdateName(uuid, name);
 
         ResourceLocation materialLocation = state.getBlock().arch$registryName();
