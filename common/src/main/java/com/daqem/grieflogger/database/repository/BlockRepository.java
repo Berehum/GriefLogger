@@ -35,8 +35,7 @@ public class BlockRepository extends Repository {
                 	type integer NOT NULL,
                 	action integer NOT NULL,
                 	FOREIGN KEY(user) REFERENCES users(id),
-                	FOREIGN KEY(level) REFERENCES levels(id),
-                	FOREIGN KEY(type) REFERENCES materials(id)
+                	FOREIGN KEY(level) REFERENCES levels(id)
                 );
                 """;
         if (database.getDialect() instanceof MySQLDialect) {
@@ -51,8 +50,7 @@ public class BlockRepository extends Repository {
                     	type int NOT NULL,
                     	action int NOT NULL,
                     	FOREIGN KEY(user) REFERENCES users(id),
-                    	FOREIGN KEY(level) REFERENCES levels(id),
-                    	FOREIGN KEY(type) REFERENCES materials(id)
+                    	FOREIGN KEY(level) REFERENCES levels(id)
                     )
                     ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4;
                     """;
@@ -107,7 +105,7 @@ public class BlockRepository extends Repository {
     }
 
     public void insertEntity(long time, String userUuid, String levelName, int x, int y, int z, String entity, int blockAction) {
-        String materialQuery = database.getDialect().getInsertIgnore() + " INTO entities(name) VALUES(?);";
+        String entityQuery = database.getDialect().getInsertIgnore() + " INTO entities(name) VALUES(?);";
 
         String blockQuery = database.getDialect().getInsertIgnore() + " INTO blocks(time, user, level, x, y, z, type, action) " +
                 "VALUES(?, (" +
@@ -119,9 +117,9 @@ public class BlockRepository extends Repository {
                 "), ?);";
 
         database.queue.add(connection -> {
-            try (PreparedStatement materialStatement = connection.prepareStatement(materialQuery)) {
-                materialStatement.setString(1, entity);
-                materialStatement.executeUpdate();
+            try (PreparedStatement entityStatement = connection.prepareStatement(entityQuery)) {
+                entityStatement.setString(1, entity);
+                entityStatement.executeUpdate();
             }
             try (PreparedStatement blockStatement = connection.prepareStatement(blockQuery)) {
                 blockStatement.setLong(1, time);
