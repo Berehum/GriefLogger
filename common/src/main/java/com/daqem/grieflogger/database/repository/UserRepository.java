@@ -29,7 +29,7 @@ public class UserRepository extends Repository {
             sql = """
                     CREATE TABLE IF NOT EXISTS users (
                     	id int PRIMARY KEY AUTO_INCREMENT,
-                    	name varchar(16) NOT NULL,
+                    	name varchar(100) NOT NULL,
                     	uuid varchar(36) DEFAULT NULL UNIQUE
                     )
                     ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4;

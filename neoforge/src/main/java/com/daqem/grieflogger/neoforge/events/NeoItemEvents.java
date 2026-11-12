@@ -11,7 +11,7 @@ import net.neoforged.neoforge.event.entity.player.PlayerDestroyItemEvent;
 @EventBusSubscriber(modid = GriefLogger.MOD_ID)
 public class NeoItemEvents {
 
-    @SubscribeEvent()
+    @SubscribeEvent
     public static void onBreakItem(PlayerDestroyItemEvent event) {
         if (event.getEntity().isCreative()) {
             return;
@@ -23,6 +23,5 @@ public class NeoItemEvents {
     public static void pickUpItem(ItemEntityPickupEvent.Post event) {
         PickupItemEvent.onPickupItem(event.getPlayer(), event.getItemEntity(), event.getOriginalStack());
     }
-
 
 }

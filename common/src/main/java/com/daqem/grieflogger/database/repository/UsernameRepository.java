@@ -31,7 +31,7 @@ public class UsernameRepository extends Repository {
                     	id int PRIMARY KEY AUTO_INCREMENT,
                     	time bigint NOT NULL,
                     	uuid varchar(36) NOT NULL,
-                    	name varchar(16) NOT NULL,
+                    	name varchar(100) NOT NULL,
                     	UNIQUE(uuid, name)
                     )
                     ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4;
