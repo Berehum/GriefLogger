@@ -11,6 +11,7 @@ public class BreakItemEvent {
     public static void breakItem(Player player, ItemStack itemStack) {
         if (player instanceof GriefLoggerServerPlayer serverPlayer) {
             serverPlayer.griefLogger$addItemToQueue(ItemAction.BREAK_ITEM, new SimpleItemStack(itemStack));
+            System.out.println("broke item " + itemStack.getDisplayName().toString());
         }
     }
 }

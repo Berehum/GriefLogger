@@ -12,7 +12,7 @@ public class PickupItemEvent extends AbstractEvent {
 
     public static void onPickupItem(Player player, ItemEntity itemEntity, ItemStack itemStack) {
         if (player instanceof GriefLoggerServerPlayer serverPlayer) {
-            serverPlayer.griefLogger$addItemToQueue(ItemAction.PICKUP_ITEM, new SimpleItemStack(itemEntity.getItem().copy()));
+            serverPlayer.griefLogger$addItemToQueue(ItemAction.PICKUP_ITEM, new SimpleItemStack(itemStack));
         }
     }
 }

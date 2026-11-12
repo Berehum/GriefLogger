@@ -9,7 +9,6 @@ public class CommandEvent {
 
     public static void registerEvent() {
         CommandPerformEvent.EVENT.register(commandPerformEvent -> {
-            System.out.println("commandPerformEvent");
             ServerPlayer player = commandPerformEvent.getResults().getContext().getSource().getPlayer();
             if (player != null) {
                 Services.COMMAND.insert(
